@@ -1,45 +1,55 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState } from 'react';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LoginResponse } from './src/services/authService';
+import DiagnosticHomeScreen from './src/screens/diagnostic/DiagnosticHomeScreen';
+import DoctorHomeScreen from './src/screens/doctor/DoctorHomeScreen';
+import PatientHomeScreen from './src/screens/patient/PatientHomeScreen';
+import LoginScreen from './src/screens/auth/LoginScreen';
+import RegisterScreen from './src/screens/auth/RegisterScreen';
+import SplashScreen from './src/screens/auth/SplashScreen';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+type Screen = 'splash' | 'login' | 'register' | 'home';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
+  const [screen, setScreen] = useState<Screen>('splash');
+  const [authData, setAuthData] = useState<LoginResponse | null>(null);
+
+  const handleLoginSuccess = (data: LoginResponse) => {
+    setAuthData(data);
+    setScreen('home');
+  };
+
+  const handleLogout = () => {
+    setAuthData(null);
+    setScreen('login');
+  };
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar barStyle="dark-content" />
+
+      {screen === 'splash' && (
+        <SplashScreen onFinish={() => setScreen('login')} />
+      )}
+      {screen === 'login' && (
+        <LoginScreen
+          onRegister={() => setScreen('register')}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+      {screen === 'register' && (
+        <RegisterScreen onLogin={() => setScreen('login')} />
+      )}
+      {screen === 'home' && authData?.user.role === 'DIAGNOSTIC_CENTER_OWNER' && (
+        <DiagnosticHomeScreen authData={authData} onLogout={handleLogout} />
+      )}
+      {screen === 'home' && authData?.user.role === 'PATIENT' && (
+        <PatientHomeScreen authData={authData} onLogout={handleLogout} />
+      )}
+      {screen === 'home' && authData?.user.role === 'DOCTOR' && (
+        <DoctorHomeScreen authData={authData} onLogout={handleLogout} />
+      )}
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;
